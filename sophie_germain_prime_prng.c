@@ -33,6 +33,9 @@ SOFTWARE.
  * CONFIGURATION / LIMITS *
  **************************/
 
+// #define TEST_VALUES
+
+#ifndef TEST_VALUES
 /// Those values must be picked correctly, so no overflow happens during the algorithm
 /// Some basic checks are asserted at the beginning of main(), which can be
 /// used as a reference, should those values be changes
@@ -59,6 +62,21 @@ SOFTWARE.
 /// we can generate a single Sophie-Germain safe prime, and thus
 /// generate a different pseudorandom sequence
 #define NUM_PRIME_GERMAIN_GAP_MAX ((num_t)17904)
+#else
+#define num_t uint16_t
+#define NUM_MAX UINT16_MAX
+#define PRInum PRIu16
+#define SCNnum SCNu16
+#define bignum_t uint32_t
+
+#define NUM_OBSERVATIONS_MAX ((num_t)255)
+#define SEED_MAX ((num_t)15)
+
+#define NUM_DIGITS_PER_OBSERVATION 2
+#define TEN_POW_NUM_DIGITS_PER_OBSERVATION 100
+
+#define NUM_PRIME_GERMAIN_GAP_MAX 616
+#endif
 
 /*********************
  * GENERIC UTILITIES *
@@ -133,7 +151,7 @@ static const num_t rm_witnesses[] = {
 
 /// Tests the specified candidate passes the Rabin-Miller primality test for a witness, where:
 /// p_candidate is an odd integer > 3 to be tested for primality
-/// d and r are such that 2^r*d = p_candidate, with d odd.
+/// d and r are such that 2^r*d = p_candidate - 1, with d odd.
 /// witness is the witness to be checked as a witness for the primality test
 /// See: https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test
 static bool test_rm_witness(num_t p_candidate, num_t d, num_t r, num_t witness) {
@@ -142,7 +160,7 @@ static bool test_rm_witness(num_t p_candidate, num_t d, num_t r, num_t witness) 
         return true;
     }
 
-    for (size_t j = 0; j < r - 1; j++) {
+    for (num_t j = 0; j < (num_t)(r - 1); j++) {
         x = mul_mod(x, x, p_candidate);
         if (x == p_candidate - 1) {
             return true;
@@ -164,7 +182,7 @@ static bool rm_primality_test(num_t p_candidate) {
         return false;
     }
 
-    num_t d = p_candidate - 1;
+    num_t d = (num_t)(p_candidate - 1);
     num_t r = 0;
     while (d % 2 == 0) {
         r++;
@@ -188,7 +206,7 @@ static bool rm_primality_test(num_t p_candidate) {
 /// Sophie-Germain prime condition (p where q=p*2+1)
 /// See: https://en.wikipedia.org/wiki/Sophie_Germain_prime#Pseudorandom_number_generation
 static bool is_sophie_germain_safe_prime(num_t q_candidate) {
-    num_t p_candidate = (q_candidate - 1) / 2;
+    num_t p_candidate = (num_t)((q_candidate - 1) / 2);
     // Associated maximally periodic reciprocal condition for p
     num_t max_recip_test = p_candidate % 20;
 
@@ -217,7 +235,7 @@ static void generate_uniform_sophie(num_t num_observations, num_t seed) {
     // configured, this generates a different value of q for every seed,
     // and it is greater than NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION + 1,
     // so it will generate (at least) NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION digits
-    num_t min_q = NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION  + 1 + seed * NUM_PRIME_GERMAIN_GAP_MAX;
+    num_t min_q = (num_t)(NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION + 1 + seed * NUM_PRIME_GERMAIN_GAP_MAX);
     fprintf(stderr, "Looking for a Sophie-Germain safe prime q >= %" PRInum "\n", min_q);
 
     num_t found_q = generate_sophie_germain_safe_prime(min_q);
