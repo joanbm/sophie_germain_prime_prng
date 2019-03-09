@@ -214,8 +214,10 @@ static num_t generate_sophie_germain_safe_prime(num_t lower_bound) {
 /// based on Sophie-Germain safe primes
 static void generate_uniform_sophie(num_t num_observations, num_t seed) {
     // Generate the required Sophie-Germain safe prime. If the program is correctly
-    // configured, this generates a different value of q for every seed
-    num_t min_q = NUM_OBSERVATIONS_MAX + seed * NUM_PRIME_GERMAIN_GAP_MAX + 1;
+    // configured, this generates a different value of q for every seed,
+    // and it is greater than NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION + 1,
+    // so it will generate (at least) NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION digits
+    num_t min_q = NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION  + 1 + seed * NUM_PRIME_GERMAIN_GAP_MAX;
     fprintf(stderr, "Looking for a Sophie-Germain safe prime q >= %" PRInum "\n", min_q);
 
     num_t found_q = generate_sophie_germain_safe_prime(min_q);
@@ -227,7 +229,7 @@ static void generate_uniform_sophie(num_t num_observations, num_t seed) {
     // using a simple long-division based decimal digit extraction algorithm
     fprintf(stderr, "Generating the decimal expansion of 1/%" PRInum "...\n", found_q);
 
-    num_t r = pow_mod(10, NUM_OBSERVATIONS_MAX * seed, found_q);
+    num_t r = 1;
     for (num_t i = 0; i < num_observations; i++) {
         num_t digits = mul_div(r, TEN_POW_NUM_DIGITS_PER_OBSERVATION, found_q);
         printf("0.%0" VALUE_STRINGIFY(NUM_DIGITS_PER_OBSERVATION) PRInum "\n", digits);
@@ -244,9 +246,15 @@ int main(int argc, char *argv[]) {
     assert((SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX) / NUM_PRIME_GERMAIN_GAP_MAX == SEED_MAX &&
         "Invalid configuration: (SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX) overflows.");
 
-    assert(SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX + NUM_OBSERVATIONS_MAX + 1 >
+    assert((SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX) / NUM_PRIME_GERMAIN_GAP_MAX == SEED_MAX &&
+        "Invalid configuration: (SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX) overflows.");
+
+	assert((NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION) / NUM_DIGITS_PER_OBSERVATION == NUM_OBSERVATIONS_MAX &&
+        "Invalid configuration: (NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION) overflows.");
+
+    assert(SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX + NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION+ 1 >
            SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX && "Invalid configuration: "
-           "(SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX + NUM_OBSERVATIONS_MAX + 1) overflows.");
+           "(SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX + NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION + 1) overflows.");
 
     assert(pow_mod(10, NUM_DIGITS_PER_OBSERVATION, NUM_MAX) == TEN_POW_NUM_DIGITS_PER_OBSERVATION &&
         "Invalid configuration: 10^NUM_DIGITS_PER_OBSERVATION != TEN_POW_NUM_DIGITS_PER_OBSERVATION");
