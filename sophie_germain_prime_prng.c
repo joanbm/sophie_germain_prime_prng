@@ -33,7 +33,7 @@ SOFTWARE.
  * CONFIGURATION / LIMITS *
  **************************/
 
-// #define TEST_VALUES
+//#define TEST_VALUES
 
 #ifndef TEST_VALUES
 /// Those values must be picked correctly, so no overflow happens during the algorithm
@@ -49,7 +49,6 @@ SOFTWARE.
 #define SEED_MAX ((num_t)UINT16_MAX)
 
 #define NUM_DIGITS_PER_OBSERVATION 15
-#define TEN_POW_NUM_DIGITS_PER_OBSERVATION 1000000000000000
 
 /// This is the maximum distance between two Sophie-Germain safe primes
 /// (similar to the 'maximal prime gap' concept but with Sophie-Germain safe primes)
@@ -73,7 +72,6 @@ SOFTWARE.
 #define SEED_MAX ((num_t)15)
 
 #define NUM_DIGITS_PER_OBSERVATION 2
-#define TEN_POW_NUM_DIGITS_PER_OBSERVATION 100
 
 #define NUM_PRIME_GERMAIN_GAP_MAX 616
 #endif
@@ -108,11 +106,6 @@ static bool parse_num(const char *str, num_t *dest) {
     // Don't allow trailing noise. See https://stackoverflow.com/a/21888827
     char trailing_detect;
     return sscanf(str, "%" SCNnum "%c", dest, &trailing_detect) == 1;
-}
-
-/// Computes (x*y / p) without multiplication potentially causing overflow
-static num_t mul_div(num_t x, num_t y, num_t p) {
-    return (num_t)(((bignum_t)x * (bignum_t)y) / p);
 }
 
 /// Computes (x*y mod p) without multiplication potentially causing overflow
@@ -248,11 +241,15 @@ static void generate_uniform_sophie(num_t num_observations, num_t seed) {
     fprintf(stderr, "Generating the decimal expansion of 1/%" PRInum "...\n", found_q);
 
     num_t r = 1;
-    for (num_t i = 0; i < num_observations; i++) {
-        num_t digits = mul_div(r, TEN_POW_NUM_DIGITS_PER_OBSERVATION, found_q);
-        printf("0.%0" VALUE_STRINGIFY(NUM_DIGITS_PER_OBSERVATION) PRInum "\n", digits);
+    char observation[NUM_DIGITS_PER_OBSERVATION+3];
+    sprintf(observation, "0.%0" VALUE_STRINGIFY(NUM_DIGITS_PER_OBSERVATION) PRInum, (num_t)0);
 
-        r = mul_mod(r, TEN_POW_NUM_DIGITS_PER_OBSERVATION, found_q);
+    for (num_t i = 0; i < num_observations; i++) {
+        for (size_t j = 0; j < NUM_DIGITS_PER_OBSERVATION; j++) {
+            observation[j+2] = (char)('0' + ((r * 10) / found_q));
+            r = (num_t)((r * 10) % found_q);
+        }
+        puts(observation);
     }
 }
 
@@ -267,15 +264,12 @@ int main(int argc, char *argv[]) {
     assert((SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX) / NUM_PRIME_GERMAIN_GAP_MAX == SEED_MAX &&
         "Invalid configuration: (SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX) overflows.");
 
-	assert((NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION) / NUM_DIGITS_PER_OBSERVATION == NUM_OBSERVATIONS_MAX &&
+    assert((NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION) / NUM_DIGITS_PER_OBSERVATION == NUM_OBSERVATIONS_MAX &&
         "Invalid configuration: (NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION) overflows.");
 
     assert(SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX + NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION+ 1 >
            SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX && "Invalid configuration: "
            "(SEED_MAX * NUM_PRIME_GERMAIN_GAP_MAX + NUM_OBSERVATIONS_MAX * NUM_DIGITS_PER_OBSERVATION + 1) overflows.");
-
-    assert(pow_mod(10, NUM_DIGITS_PER_OBSERVATION, NUM_MAX) == TEN_POW_NUM_DIGITS_PER_OBSERVATION &&
-        "Invalid configuration: 10^NUM_DIGITS_PER_OBSERVATION != TEN_POW_NUM_DIGITS_PER_OBSERVATION");
 
     // Print title, check and validate command line arguments
     fprintf(stderr, "PRNG Based on Sophie-Germain primes\n");
