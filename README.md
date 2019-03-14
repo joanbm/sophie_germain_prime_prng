@@ -12,12 +12,12 @@ Note that no warranty is implied on the quality of the generated output, and in 
 
 ## Quickstart
 
-GCC must be installed. To compile the program, type `make`. The usage can be seen by executing the generated executable (`sophie_germain_prime_prng`). For example:
+GCC must be installed. To compile the program, type `make`. The usage can be seen by executing the generated executable (`sophie`). For example:
 
 ```
 $ make
-gcc -Ofast -Wall -Wextra -Wconversion -std=c99 sophie_germain_prime_prng.c -osophie_germain_prime_prng
-$ ./sophie_germain_prime_prng 20 12345
+gcc -Ofast -Wall -Wextra -Wconversion -std=c99 sophie.c -osophie
+$ ./sophie 20 12345
 PRNG Based on Sophie-Germain primes
 -----------------------------------
 Looking for a Sophie-Germain safe prime q >= 4515992176
